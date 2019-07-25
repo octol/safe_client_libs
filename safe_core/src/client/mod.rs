@@ -1977,6 +1977,7 @@ mod tests {
     use super::*;
     use crate::utils::generate_random_vector;
     use crate::utils::test_utils::random_client;
+    use crate::client::mock::vault::COST_OF_PUT;
     use safe_nd::{
         ADataAction, ADataOwner, ADataUnpubPermissionSet, ADataUnpubPermissions, AppendOnlyData,
         MDataAction, PubSeqAppendOnlyData, SeqAppendOnly, UnpubSeqAppendOnlyData,
@@ -2383,7 +2384,10 @@ mod tests {
             client
                 .get_balance(None)
                 .then(move |res| {
-                    let expected_amt = unwrap!(Coins::from_str("1"));
+                    // Subtract to cover the cost of inserting the login packet
+                    let expected_amt = unwrap!(Coins::from_str("10")
+                        .ok()
+                        .and_then(|x| x.checked_sub(*COST_OF_PUT)));
                     match res {
                         Ok(fetched_amt) => assert_eq!(expected_amt, fetched_amt),
                         res => panic!("Unexpected result: {:?}", res),
