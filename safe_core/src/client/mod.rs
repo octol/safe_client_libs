@@ -390,6 +390,36 @@ pub trait Client: Clone + 'static {
         )
     }
 
+    /// Create a login packet using own balance.
+    fn create_login_packet_for(
+        &self,
+        new_balance_owner: PublicKey,
+        login_packet: LoginPacket,
+        amount: Coins
+    ) -> Box<CoreFuture<()>> {
+        trace!("Creating login packet for {:?}", new_balance_owner);
+
+        let transaction_id = new_rand::random();
+        self.create_balance(self.secret_bls_key(), new_balance_owner, amount, transaction_id)
+            .and_then(|event| {
+                let request = Request::CreateLoginPacketFor {
+                    new_owner: new_balance_owner, // ??
+                    amount,
+                    transaction_id: new_rand::random(),
+                    new_login_packet: login_packet,
+                };
+
+                // Sign message
+                let message = self.compose_message(request);
+                let requester = None;
+
+                send_mutation(self, message.message_id(), move |routing, _| {
+                    routing.send(requester, &unwrap!(serialise(&message)))
+                })
+            })
+            .into_box()
+    }
+
     /// Get the current coin balance.
     fn get_balance(
         &self,
