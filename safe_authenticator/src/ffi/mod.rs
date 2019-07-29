@@ -17,12 +17,10 @@ use crate::errors::AuthError;
 use crate::Authenticator;
 use config_file_handler;
 use ffi_utils::{catch_unwind_cb, from_c_str, FfiResult, OpaqueCtx, FFI_RESULT_OK};
-use safe_core::utils::test_utils::random_client;
 use safe_core::Client;
 use safe_nd::Coins;
 use std::ffi::{CStr, CString, OsStr};
 use std::os::raw::{c_char, c_void};
-use std::str::FromStr;
 
 /// Create a registered client. This or any one of the other companion
 /// functions to get an authenticator instance must be called before initiating any
@@ -50,10 +48,10 @@ pub unsafe extern "C" fn create_acc(
         // FIXME: Send secret key via FFI API too
         let balance_sk = threshold_crypto::SecretKey::random();
         let balance_pk = balance_sk.public_key();
-        random_client(move |client| {
-            client.test_create_balance(balance_pk.into(), unwrap!(Coins::from_str("10")));
-            Ok::<_, AuthError>(())
-        });
+        // random_client(move |client| {
+        //     client.test_create_balance(balance_pk.into(), unwrap!(Coins::from_str("10")));
+        //     Ok::<_, AuthError>(())
+        // });
 
         let authenticator =
             Authenticator::create_acc(acc_locator, acc_password, balance_sk, move || {
@@ -119,7 +117,7 @@ pub unsafe extern "C" fn auth_reconnect(
         let user_data = OpaqueCtx(user_data);
         (*auth).send(move |client| {
             try_cb!(
-                client.restart_routing().map_err(AuthError::from),
+                client.restart_network().map_err(AuthError::from),
                 user_data.0,
                 o_cb
             );
