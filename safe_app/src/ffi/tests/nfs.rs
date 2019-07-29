@@ -19,6 +19,7 @@ use safe_core::ffi::nfs::File;
 use safe_core::ffi::MDataInfo;
 use safe_core::ipc::Permission;
 use safe_core::nfs::{File as NativeFile, NfsError};
+use safe_core::utils;
 use std;
 use std::collections::HashMap;
 use std::ffi::CString;
@@ -142,7 +143,7 @@ fn open_file() {
     let file_name1 = "file1.txt";
     let ffi_file_name1 = unwrap!(CString::new(file_name1));
 
-    let content = b"hello world";
+    let content = unwrap!(utils::generate_random_vector(10));
 
     let write_h = unsafe {
         unwrap!(call_1(|ud, cb| file_open(
@@ -249,7 +250,7 @@ fn open_file() {
     assert!(created_time <= read_modified_time);
 
     // Append content
-    let append_content = b" appended";
+    let append_content = unwrap!(utils::generate_random_vector(10));
 
     let written_file: NativeFile = unsafe {
         unwrap!(call_0(|ud, cb| file_write(
@@ -321,7 +322,11 @@ fn open_file() {
             cb
         )))
     };
-    assert_eq!(retrieved_content, b"hello world appended");
+
+    let mut expected_content = content.clone();
+    expected_content.extend(&append_content);
+
+    assert_eq!(retrieved_content, expected_content);
 
     let returned_file: NativeFile =
         unsafe { unwrap!(call_1(|ud, cb| file_close(&app, read_h, ud, cb))) };
@@ -345,7 +350,7 @@ fn fetch_file() {
     let file_name1 = "";
     let ffi_file_name1 = unwrap!(CString::new(file_name1));
 
-    let content = b"hello world";
+    let content = unwrap!(utils::generate_random_vector(10));
 
     let write_h = unsafe {
         unwrap!(call_1(|ud, cb| file_open(
@@ -490,7 +495,7 @@ fn delete_then_open_file() {
     let file_name2 = "file2.txt";
     let ffi_file_name2 = unwrap!(CString::new(file_name2));
 
-    let content_original = b"hello world";
+    let content_original = unwrap!(utils::generate_random_vector(10));
 
     let write_h = unsafe {
         unwrap!(call_1(|ud, cb| file_open(
@@ -545,7 +550,7 @@ fn delete_then_open_file() {
     let file = NativeFile::new(Vec::new(), true);
     let ffi_file = file.into_repr_c();
 
-    let content_new = b"hello goodbye";
+    let content_new = unwrap!(utils::generate_random_vector(10));
 
     let write_h = unsafe {
         unwrap!(call_1(|ud, cb| file_open(
@@ -638,7 +643,7 @@ fn open_close_file() {
     let file = NativeFile::new(user_metadata.clone(), true);
     let ffi_file = file.into_repr_c();
 
-    let content = b"hello world";
+    let content = unwrap!(utils::generate_random_vector(10));
 
     let write_h = unsafe {
         unwrap!(call_1(|ud, cb| file_open(
@@ -767,7 +772,7 @@ fn file_open_read_write() {
     let ffi_file = file.into_repr_c();
 
     let initial_content = b"";
-    let content = b"hello world";
+    let content = unwrap!(utils::generate_random_vector(10));
 
     // Write to the file first because we can't open a non-existent file for reading.
     let write_h = unsafe {
