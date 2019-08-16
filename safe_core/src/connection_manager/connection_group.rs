@@ -111,15 +111,12 @@ impl ConnectionGroup {
         Box::new(
             future_rx
                 .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
-                .map_err(|_e| {
-                    CoreError::RequestTimeout
-                })
-                // .then(move |result| {
-                //     if let Some(inner) = inner_weak.upgrade() {
-                //         let _ = inner.borrow_mut().hooks.remove(&msg_id);
-                //     }
-                //     result
-                // }),
+                .map_err(|_e| CoreError::RequestTimeout), // .then(move |result| {
+                                                          //     if let Some(inner) = inner_weak.upgrade() {
+                                                          //         let _ = inner.borrow_mut().hooks.remove(&msg_id);
+                                                          //     }
+                                                          //     result
+                                                          // }),
         )
     }
 
@@ -151,6 +148,9 @@ impl ConnectionGroup {
                     response,
                     message_id,
                 }) => self.handle_response(peer_addr, message_id, response),
+                Ok(Message::Notification { notification }) => {
+                    trace!("Got transaction notification: {:?}", notification);
+                }
                 Ok(_msg) => error!("Unexpected message type, expected response."),
                 Err(e) => {
                     if let Ok(_x) = deserialize::<Challenge>(&msg) {

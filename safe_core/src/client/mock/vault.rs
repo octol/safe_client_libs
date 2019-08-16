@@ -9,6 +9,7 @@
 use super::DataId;
 use super::{Account, CoinBalance};
 use crate::client::mock::connection_manager::unlimited_muts;
+use crate::client::COST_OF_PUT;
 use crate::config_handler::{Config, DevConfig};
 use fs2::FileExt;
 use maidsafe_utilities::serialisation::{deserialise, serialise};

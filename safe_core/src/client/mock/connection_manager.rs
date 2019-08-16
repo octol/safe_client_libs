@@ -87,7 +87,7 @@ impl ConnectionManager {
     /// Create coin balance in the mock network arbitrarily.
     pub fn create_balance(&self, owner: PublicKey, amount: Coins) {
         let mut vault = vault::lock(&self.vault, true);
-        vault.mock_create_balance(&owner.into(), amount, owner);
+        vault.mock_create_balance(owner, amount);
     }
 
     /// Simulates network disconnect
