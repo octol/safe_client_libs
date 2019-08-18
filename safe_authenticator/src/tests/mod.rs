@@ -45,12 +45,13 @@ mod mock_routing {
     use crate::std_dirs::{DEFAULT_PRIVATE_DIRS, DEFAULT_PUBLIC_DIRS};
     use crate::{test_utils, Authenticator};
     use futures::Future;
-    use mock_routing::{ClientError, User};
     use safe_core::ipc::AuthReq;
     use safe_core::nfs::NfsError;
-    use safe_core::utils::{generate_random_string, test_utils::random_client};
-    use safe_core::{app_container_name, test_create_balance, Client, ConnectionManager, CoreError};
-    use safe_nd::{Coins, PublicKey, Request, Response};
+    use safe_core::utils::generate_random_string;
+    use safe_core::{
+        app_container_name, test_create_balance, Client, ConnectionManager, CoreError,
+    };
+    use safe_nd::{Coins, Error as SndError, PublicKey, Request, Response};
     use std::str::FromStr;
 
     // Test operation recovery for std dirs creation.
@@ -95,7 +96,7 @@ mod mock_routing {
                     //         if put_mdata_counter > 4 {
                     //             Some(Response::PutMData {
                     //                 msg_id,
-                    //                 res: Err(ClientError::LowBalance),
+                    //                 res: Err(SndError::InsufficientBalance),
                     //             })
                     //         } else {
                     //             None
@@ -157,33 +158,33 @@ mod mock_routing {
                 // FIXME
                 // match *req {
                 //     Request::PutIData { msg_id, .. } => Some(Response::PutIData {
-                //         res: Err(ClientError::LowBalance),
+                //         res: Err(SndError::InsufficientBalance),
                 //         msg_id,
                 //     }),
                 //     Request::PutMData { msg_id, .. } => Some(Response::PutMData {
-                //         res: Err(ClientError::LowBalance),
+                //         res: Err(SndError::InsufficientBalance),
                 //         msg_id,
                 //     }),
                 //     Request::MutateMDataEntries { msg_id, .. } => {
                 //         Some(Response::MutateMDataEntries {
-                //             res: Err(ClientError::LowBalance),
+                //             res: Err(SndError::InsufficientBalance),
                 //             msg_id,
                 //         })
                 //     }
                 //     Request::SetMDataUserPermissions { msg_id, .. } => {
                 //         Some(Response::SetMDataUserPermissions {
-                //             res: Err(ClientError::LowBalance),
+                //             res: Err(SndError::InsufficientBalance),
                 //             msg_id,
                 //         })
                 //     }
                 //     Request::DelMDataUserPermissions { msg_id, .. } => {
                 //         Some(Response::DelMDataUserPermissions {
-                //             res: Err(ClientError::LowBalance),
+                //             res: Err(SndError::InsufficientBalance),
                 //             msg_id,
                 //         })
                 //     }
                 //     Request::ChangeMDataOwner { msg_id, .. } => Some(Response::ChangeMDataOwner {
-                //         res: Err(ClientError::LowBalance),
+                //         res: Err(SndError::InsufficientBalance),
                 //         msg_id,
                 //     }),
                 //     // Pass-through
@@ -244,7 +245,7 @@ mod mock_routing {
 
                     // TODO: fix this test
                     // Request::InsAuthKey { msg_id, .. } => Some(Response::InsAuthKey {
-                    //     res: Err(ClientError::LowBalance),
+                    //     res: Err(SndError::InsufficientBalance),
                     //     msg_id,
                     // }),
 
@@ -275,7 +276,9 @@ mod mock_routing {
         // `Revoked` state (as it is listed in the config root, but not in the access
         // container)
         match test_utils::register_app(&auth, &auth_req) {
-            Err(AuthError::CoreError(CoreError::RoutingClientError(ClientError::LowBalance))) => (),
+            Err(AuthError::CoreError(CoreError::NewRoutingClientError(
+                SndError::InsufficientBalance,
+            ))) => (),
             x => panic!("Unexpected {:?}", x),
         }
 
@@ -293,7 +296,7 @@ mod mock_routing {
 
                     //     if reqs_counter == 2 {
                     //         Some(Response::SetMDataUserPermissions {
-                    //             res: Err(ClientError::LowBalance),
+                    //             res: Err(SndError::InsufficientBalance),
                     //             msg_id,
                     //         })
                     //     } else {
@@ -313,7 +316,9 @@ mod mock_routing {
             cm_hook,
         ));
         match test_utils::register_app(&auth, &auth_req) {
-            Err(AuthError::CoreError(CoreError::RoutingClientError(ClientError::LowBalance))) => (),
+            Err(AuthError::CoreError(CoreError::NewRoutingClientError(
+                SndError::InsufficientBalance,
+            ))) => (),
             x => panic!("Unexpected {:?}", x),
         }
 
@@ -325,7 +330,7 @@ mod mock_routing {
                 // FIXME
                 match *req {
                     // Request::PutMData { msg_id, .. } => Some(Response::PutMData {
-                    //     res: Err(ClientError::LowBalance),
+                    //     res: Err(SndError::InsufficientBalance),
                     //     msg_id,
                     // }),
 
@@ -342,8 +347,8 @@ mod mock_routing {
             cm_hook,
         ));
         match test_utils::register_app(&auth, &auth_req) {
-            Err(AuthError::NfsError(NfsError::CoreError(CoreError::RoutingClientError(
-                ClientError::LowBalance,
+            Err(AuthError::NfsError(NfsError::CoreError(CoreError::NewRoutingClientError(
+                SndError::InsufficientBalance,
             )))) => (),
             x => panic!("Unexpected {:?}", x),
         }
@@ -357,7 +362,7 @@ mod mock_routing {
                     // Request::MutateMDataEntries { msg_id, .. } => {
                     //     // None
                     //     Some(Response::SetMDataUserPermissions {
-                    //         res: Err(ClientError::LowBalance),
+                    //         res: Err(SndError::InsufficientBalance),
                     //         msg_id,
                     //     })
                     // }

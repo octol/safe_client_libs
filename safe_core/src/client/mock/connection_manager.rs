@@ -8,7 +8,11 @@
 
 use super::vault::{self, Vault};
 use crate::config_handler::{get_config, Config};
-use crate::{client::NewFullId, event::NetworkTx, CoreError, CoreFuture};
+use crate::{
+    client::NewFullId,
+    event::{NetworkEvent, NetworkTx},
+    CoreError, CoreFuture,
+};
 use maidsafe_utilities::serialisation::serialise;
 use quic_p2p::{self, Config as QuicP2pConfig};
 use safe_nd::{Coins, Message, PublicId, PublicKey, Request, Response, XorName};
@@ -33,15 +37,17 @@ pub struct ConnectionManager {
     vault: Arc<Mutex<Vault>>,
     request_hook: Option<Arc<RequestHookFn>>,
     response_hook: Option<Arc<ResponseHookFn>>,
+    net_tx: NetworkTx,
 }
 
 impl ConnectionManager {
     /// Create a new connection manager.
-    pub fn new(_config: QuicP2pConfig, _net_tx: &NetworkTx) -> Result<Self, CoreError> {
+    pub fn new(_config: QuicP2pConfig, net_tx: &NetworkTx) -> Result<Self, CoreError> {
         Ok(Self {
             vault: clone_vault(),
             request_hook: None,
             response_hook: None,
+            net_tx: net_tx.clone(),
         })
     }
 
@@ -92,9 +98,7 @@ impl ConnectionManager {
 
     /// Simulates network disconnect
     pub fn simulate_disconnect(&self) {
-        unimplemented!()
-        // let sender = self.sender.clone();
-        // let _ = std::thread::spawn(move || unwrap!(sender.send(Event::Terminate)));
+        let _ = self.net_tx.unbounded_send(NetworkEvent::Disconnected);
     }
 
     /// Simulates network timeouts
