@@ -23,13 +23,16 @@ use safe_nd::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::env;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
+#[cfg(not(test))]
+use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard};
 use std::time::Duration;
 use std::time::SystemTime;
+#[cfg(test)]
 use tempfile::tempfile;
 
 // TODO: Replace this with `Data` from safe-nd
@@ -1527,18 +1530,30 @@ impl FileStore {
     }
 }
 
-impl Store for FileStore {
-    fn load(&mut self, writing: bool) -> Option<Cache> {
-        let mut file = if let Some(path) = &self.path {
-            unwrap!(OpenOptions::new()
+impl FileStore {
+    #[cfg(not(test))]
+    fn open_file(&self) -> File {
+        unwrap!(self.path.as_ref().and_then(|ref path| {
+            OpenOptions::new()
                 .read(true)
                 .write(true)
                 .create(true)
                 .truncate(false)
-                .open(&path))
-        } else {
-            unwrap!(tempfile())
-        };
+                .open(&path)
+                .ok()
+        }))
+    }
+
+    #[cfg(test)]
+    fn open_file(&self) -> File {
+        assert!(self.path.is_none());
+        unwrap!(tempfile())
+    }
+}
+
+impl Store for FileStore {
+    fn load(&mut self, writing: bool) -> Option<Cache> {
+        let mut file = self.open_file();
 
         if writing {
             unwrap!(file.lock_exclusive());
